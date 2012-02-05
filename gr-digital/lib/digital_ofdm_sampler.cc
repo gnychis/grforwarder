@@ -24,6 +24,7 @@
 #include "config.h"
 #endif
 
+#include <iostream>
 #include <digital_ofdm_sampler.h>
 #include <gr_io_signature.h>
 #include <gr_expj.h>
@@ -112,6 +113,8 @@ digital_ofdm_sampler::general_work (int noutput_items,
 						seconds += 1;
 						frac_of_secs -= 1;
 					}
+
+					std::cout << "TXSYNC: got synchronization at" << seconds << "." << frac_of_secs << std::endl;
 
 					// Pack up our time of synchronization, pass it along using the stream tags
 					gr_tag_t tag;		// create a new tag
