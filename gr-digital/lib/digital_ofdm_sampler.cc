@@ -28,6 +28,10 @@
 #include <gr_io_signature.h>
 #include <gr_expj.h>
 #include <cstdio>
+#include <boost/foreach.hpp>
+
+static const pmt::pmt_t TIME_KEY = pmt::pmt_string_to_symbol("rx_time");
+static const pmt::pmt_t SYNC_TIME = pmt::pmt_string_to_symbol("sync_time");
 
 digital_ofdm_sampler_sptr
 digital_make_ofdm_sampler (unsigned int fft_length, 
@@ -66,6 +70,11 @@ digital_ofdm_sampler::general_work (int noutput_items,
 				    gr_vector_const_void_star &input_items,
 				    gr_vector_void_star &output_items)
 {
+	// Use the stream tags to the timestamp
+	std::vector<gr_tag_t> rx_time_tags;
+	const uint64_t nread = this->nitems_read(0); //number of items read on port 0
+	this->get_tags_in_range(rx_time_tags, 0, nread, nread+ninput_items[0], TIME_KEY);
+
   const gr_complex *iptr = (const gr_complex *) input_items[0];
   const char *trigger = (const char *) input_items[1];
 
@@ -84,6 +93,38 @@ digital_ofdm_sampler::general_work (int noutput_items,
     if(trigger[index]) {
       outsig[0] = 1; // tell the next block there is a preamble coming
       d_state = STATE_PREAMBLE;
+
+			for(size_t t=rx_time_tags.size()-1; t>=0; t--) {
+				if(rx_time_tags[t].offset <= index) {  // the current rx_time tag includes our preamble
+					const uint64_t sample_offset = index - rx_time_tags[t].offset;  // distance from sample to timestamp in samples
+					double rate = relative_rate();
+
+					// The analog to digital converter is 400 million samples / sec.  That translates to 
+					// 2.5ns of time for every sample.
+					double time_per_sample = 1 / 400000000;
+					double elapsed = sample_offset * time_per_sample;
+					
+					// Now, compute the actual time in seconds and fractional seconds of the preamble
+					const pmt::pmt_t &value = rx_time_tags[t].value;
+					double frac_of_secs = pmt::pmt_to_double(pmt_tuple_ref(value,1)) + elapsed;
+					uint64_t seconds = pmt::pmt_to_uint64(pmt_tuple_ref(value, 0));
+					if(frac_of_secs>=1) {	// if our frac_of_secs is now >1 second, contribute to seconds, shave it off frac_of_secs
+						seconds += 1;
+						frac_of_secs -= 1;
+					}
+
+					// Pack up our time of synchronization, pass it along using the stream tags
+					gr_tag_t tag;		// create a new tag
+					tag.srcid = pmt::pmt_string_to_symbol(this->name());		// to know the source block that created tag
+					tag.offset=index;			// the offset in the sample stream that we found this tag
+					tag.key=SYNC_TIME;		// the "key" of the tag, which I've defined to be "SYNC_TIME"
+					tag.value = pmt::pmt_make_tuple(
+							pmt::pmt_from_uint64(seconds),			// FPGA clock in seconds that we found the sync
+							pmt::pmt_from_double(frac_of_secs)	// FPGA clock in fractional seconds that we found the sync
+						);
+					add_item_tag(0, tag);
+				}
+			}
     }
     else
       index++;
