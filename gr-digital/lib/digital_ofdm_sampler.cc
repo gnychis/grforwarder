@@ -124,42 +124,38 @@ digital_ofdm_sampler::general_work (int noutput_items,
       outsig[0] = 1; // tell the next block there is a preamble coming
       d_state = STATE_PREAMBLE;
 
-      std::cout << "got a preamble.... calculating timestamp of sync\n";
-			std::cout << "... relative_rate: " << relative_rate() << "\n";
-
-			// Calculate the amount of time that has passed since our last timestamp, compared
-			// to the number of samples that have elapsed, including the index of the preamble
       // The analog to digital converter is 400 million samples / sec.  That translates to 
       // 2.5ns of time for every sample.
-      double time_per_sample = 1 / 400000000;
-      double elapsed = sample_offset * time_per_sample;
+      double time_per_sample = 1 / 100000000.0 * (int)(1/this->relative_rate());
 			uint64_t samples_passed = lts_samples_since + index;
-      double frac_of_secs = pmt::pmt_to_double(pmt_tuple_ref(value,1)) + elapsed;
-      uint64_t seconds = pmt::pmt_to_uint64(pmt_tuple_ref(value, 0));
-
-      //    
-      //    // Now, compute the actual time in seconds and fractional seconds of the preamble
-      //    double frac_of_secs = pmt::pmt_to_double(pmt_tuple_ref(value,1)) + elapsed;
-      //    uint64_t seconds = pmt::pmt_to_uint64(pmt_tuple_ref(value, 0));
-      //    if(frac_of_secs>=1) { // if our frac_of_secs is now >1 second, contribute to seconds, shave it off frac_of_secs
-      //      seconds += 1;
-      //      frac_of_secs -= 1;
-      //    }
-
-      //    std::cout << "TXSYNC: got synchronization at" << seconds << "." << frac_of_secs << std::endl;
-
-      //    // Pack up our time of synchronization, pass it along using the stream tags
-      //    gr_tag_t tag;   // create a new tag
-      //    tag.srcid = pmt::pmt_string_to_symbol(this->name());    // to know the source block that created tag
-      //    tag.offset=index;     // the offset in the sample stream that we found this tag
-      //    tag.key=SYNC_TIME;    // the "key" of the tag, which I've defined to be "SYNC_TIME"
-      //    tag.value = pmt::pmt_make_tuple(
-      //        pmt::pmt_from_uint64(seconds),      // FPGA clock in seconds that we found the sync
-      //        pmt::pmt_from_double(frac_of_secs)  // FPGA clock in fractional seconds that we found the sync
-      //      );
-      //    add_item_tag(0, tag);
-      //  }
+      double elapsed = samples_passed * time_per_sample;
+			
+      // Use the last time stamp to calculate the time of the premable synchronization
+      uint64_t sync_sec = (int)elapsed + lts_secs;
+      double sync_frac_sec = elapsed - (int)elapsed + lts_frac_of_secs;
+      if(sync_frac_sec>1) {
+        sync_sec += (uint64_t)sync_frac_sec; 
+        sync_frac_sec -= (uint64_t)sync_frac_sec;
       }
+
+      std::cout << "got a preamble.... calculating timestamp of sync\n";
+			std::cout << "... relative_rate: " << relative_rate() << "\n";
+			std::cout << "... time_per_sample: " << time_per_sample << "\n";
+			std::cout << "... samples_passed: " << samples_passed << "\n";
+			std::cout << "... elapsed: "<< elapsed << "\n";
+			std::cout << "... sync_sec: "<< sync_sec << "\n";
+			std::cout << "... sync_fs: "<< sync_frac_sec << "\n";
+
+      // Pack up our time of synchronization, pass it along using the stream tags
+      gr_tag_t tag;   // create a new tag
+      tag.srcid = pmt::pmt_string_to_symbol(this->name());    // to know the source block that created tag
+      tag.offset=index;     // the offset in the sample stream that we found this tag
+      tag.key=SYNC_TIME;    // the "key" of the tag, which I've defined to be "SYNC_TIME"
+      tag.value = pmt::pmt_make_tuple(
+          pmt::pmt_from_uint64((int)elapsed),      // FPGA clock in seconds that we found the sync
+          pmt::pmt_from_double(elapsed / (int)elapsed)  // FPGA clock in fractional seconds that we found the sync
+        );
+      add_item_tag(0, tag);
     }
     else
       index++;
