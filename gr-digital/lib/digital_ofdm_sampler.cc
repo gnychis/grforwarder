@@ -34,6 +34,11 @@
 
 static const pmt::pmt_t TIME_KEY = pmt::pmt_string_to_symbol("rx_time");
 static const pmt::pmt_t SYNC_TIME = pmt::pmt_string_to_symbol("sync_time");
+    
+// Keep track of the RX timestamp
+double lts_frac_of_secs;
+uint64_t lts_secs;
+uint64_t lts_samples_since;
 
 digital_ofdm_sampler_sptr
 digital_make_ofdm_sampler (unsigned int fft_length, 
@@ -51,6 +56,7 @@ digital_ofdm_sampler::digital_ofdm_sampler (unsigned int fft_length,
         gr_make_io_signature2 (2, 2, sizeof (gr_complex)*fft_length, sizeof(char)*fft_length)),
     d_state(STATE_NO_SIG), d_timeout_max(timeout), d_fft_length(fft_length), d_symbol_length(symbol_length)
 {
+  lts_samples_since=0;
   set_relative_rate(1.0/(double) fft_length);   // buffer allocator hint
 }
 
@@ -72,10 +78,24 @@ digital_ofdm_sampler::general_work (int noutput_items,
             gr_vector_const_void_star &input_items,
             gr_vector_void_star &output_items)
 {
+
   // Use the stream tags to the timestamp
   std::vector<gr_tag_t> rx_time_tags;
   const uint64_t nread = this->nitems_read(0); //number of items read on port 0
   this->get_tags_in_range(rx_time_tags, 0, nread, nread+ninput_items[0], TIME_KEY);
+
+  // See if there is a RX timestamp (only on first block or after underrun)
+  if(rx_time_tags.size()>0) {
+    size_t t = rx_time_tags.size()-1;
+
+    // Take the last timestamp
+    const uint64_t sample_offset = rx_time_tags[t].offset;  // distance from sample to timestamp in samples
+    const pmt::pmt_t &value = rx_time_tags[t].value;
+    double time_per_sample = 1 / 400000000;
+    double elapsed = sample_offset * time_per_sample;
+
+  }
+
 
   const gr_complex *iptr = (const gr_complex *) input_items[0];
   const char *trigger = (const char *) input_items[1];
