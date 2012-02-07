@@ -91,9 +91,17 @@ digital_ofdm_sampler::general_work (int noutput_items,
     // Take the last timestamp
     const uint64_t sample_offset = rx_time_tags[t].offset;  // distance from sample to timestamp in samples
     const pmt::pmt_t &value = rx_time_tags[t].value;
-    double time_per_sample = 1 / 400000000;
-    double elapsed = sample_offset * time_per_sample;
 
+		// If the offset is greater than 0, this is a bit odd and complicated, so let's throw an error
+		// and if this is common, George will fix it.
+		if(sample_offset>0) {
+			std::cerr << "----- ERROR:  RX Time offset > 0, George will fix if this is common\n";
+			exit(-1);
+		}
+		
+		// Now, compute the actual time in seconds and fractional seconds of the preamble
+		lts_frac_of_secs = pmt::pmt_to_double(pmt_tuple_ref(value,1));
+		lts_secs = pmt::pmt_to_uint64(pmt_tuple_ref(value, 0));
   }
 
 
@@ -116,25 +124,19 @@ digital_ofdm_sampler::general_work (int noutput_items,
       outsig[0] = 1; // tell the next block there is a preamble coming
       d_state = STATE_PREAMBLE;
 
-      std::cout << "got a preamble, size of time_tags: " << rx_time_tags.size() << "\n";
+      std::cout << "got a preamble.... calculating timestamp of sync\n";
+			std::cout << "... relative_rate: " << relative_rate() << "\n";
 
-      for(int t=rx_time_tags.size()-1; t>=0; t--) {
-        std::cout << "... t: " << t << "\n";
-        if(rx_time_tags[t].offset <= index) {  // the current rx_time tag includes our preamble
-          const uint64_t sample_offset = index - rx_time_tags[t].offset;  // distance from sample to timestamp in samples
-          double rate = relative_rate();
-          const pmt::pmt_t &value = rx_time_tags[t].value;
-            
-          std::cout << boost::format("Full seconds %u, Frac seconds %f, abs sample offset %u")
-              % pmt::pmt_to_uint64(pmt_tuple_ref(value, 0))
-              % pmt::pmt_to_double(pmt_tuple_ref(value, 1))
-              % sample_offset
-          << std::endl;
+			// Calculate the amount of time that has passed since our last timestamp, compared
+			// to the number of samples that have elapsed, including the index of the preamble
+      // The analog to digital converter is 400 million samples / sec.  That translates to 
+      // 2.5ns of time for every sample.
+      double time_per_sample = 1 / 400000000;
+      double elapsed = sample_offset * time_per_sample;
+			uint64_t samples_passed = lts_samples_since + index;
+      double frac_of_secs = pmt::pmt_to_double(pmt_tuple_ref(value,1)) + elapsed;
+      uint64_t seconds = pmt::pmt_to_uint64(pmt_tuple_ref(value, 0));
 
-      //    // The analog to digital converter is 400 million samples / sec.  That translates to 
-      //    // 2.5ns of time for every sample.
-      //    double time_per_sample = 1 / 400000000;
-      //    double elapsed = sample_offset * time_per_sample;
       //    
       //    // Now, compute the actual time in seconds and fractional seconds of the preamble
       //    double frac_of_secs = pmt::pmt_to_double(pmt_tuple_ref(value,1)) + elapsed;
@@ -156,7 +158,7 @@ digital_ofdm_sampler::general_work (int noutput_items,
       //        pmt::pmt_from_double(frac_of_secs)  // FPGA clock in fractional seconds that we found the sync
       //      );
       //    add_item_tag(0, tag);
-        }
+      //  }
       }
     }
     else
@@ -174,6 +176,7 @@ digital_ofdm_sampler::general_work (int noutput_items,
     d_timeout = d_timeout_max; // tell the system to expect at least this many symbols for a frame
     d_state = STATE_FRAME;
     consume_each(index - d_fft_length + 1); // consume up to one fft_length away to keep the history
+		lts_samples_since += index - d_fft_length + 1;
     ret = 1;
     break;
     
@@ -193,12 +196,14 @@ digital_ofdm_sampler::general_work (int noutput_items,
     }
 
     consume_each(d_symbol_length); // jump up by 1 fft length and the cyclic prefix length
+		lts_samples_since += d_symbol_length;
     ret = 1;
     break;
 
   case(STATE_NO_SIG):
   default:
     consume_each(index-d_fft_length); // consume everything we've gone through so far leaving the fft length history
+		lts_samples_since += index-d_fft_length;
     ret = 0;
     break;
   }
