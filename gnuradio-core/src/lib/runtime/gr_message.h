@@ -51,9 +51,9 @@ class GR_CORE_API gr_message {
   double	  d_arg1;	// optional arg1
   double 	  d_arg2;	// optional arg2
 
-	bool 			timestamp_valid;		// whether the timestamp is valid
-	uint64_t 	preamble_sec;				// the preamble sync time in seconds
-	double 		preamble_frac_sec;	// the preamble sync time's fractional seconds
+	bool 			d_timestamp_valid;		// whether the timestamp is valid
+	uint64_t 	d_preamble_sec;				// the preamble sync time in seconds
+	double 		d_preamble_frac_sec;	// the preamble sync time's fractional seconds
 
   unsigned char	 *d_buf_start;	// start of allocated buffer
   unsigned char  *d_msg_start;	// where the msg starts
@@ -81,6 +81,9 @@ public:
   long type() const   { return d_type; }
   double arg1() const { return d_arg1; }
   double arg2() const { return d_arg2; }
+	bool timestamp_valid const { return d_timestamp_valid; }
+	uint64_t preamble_sec const { return d_preamble_sec; }
+	double preamble_frac_sec const { return d_preamble_frac_sec; }
 
   void set_type(long type)   { d_type = type; }
   void set_arg1(double arg1) { d_arg1 = arg1; }
