@@ -358,7 +358,8 @@ digital_ofdm_frame_sink::work (int noutput_items,
 
 			// With a good header, let's now check for the preamble sync timestamp
 			std::vector<gr_tag_t> rx_sync_tags;
-			this->get_tags_in_range(rx_sync_tags, 0, nread, nread+ninput_items[0], SYNC_TIME);
+      const uint64_t nread = this->nitems_read(0);
+			this->get_tags_in_range(rx_sync_tags, 0, nread, nread+input_items.size(), SYNC_TIME);
 			if(rx_sync_tags.size()>0) {
 				size_t t = rx_sync_tags.size()-1;
 				const pmt::pmt_t &value = rx_sync_tags[t].value;
