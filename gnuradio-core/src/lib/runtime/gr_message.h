@@ -51,6 +51,10 @@ class GR_CORE_API gr_message {
   double	  d_arg1;	// optional arg1
   double 	  d_arg2;	// optional arg2
 
+	bool 			timestamp_valid;		// whether the timestamp is valid
+	uint64_t 	preamble_sec;				// the preamble sync time in seconds
+	double 		preamble_frac_sec;	// the preamble sync time's fractional seconds
+
   unsigned char	 *d_buf_start;	// start of allocated buffer
   unsigned char  *d_msg_start;	// where the msg starts
   unsigned char  *d_msg_end;	// one beyond end of msg
@@ -71,6 +75,8 @@ class GR_CORE_API gr_message {
 
 public:
   ~gr_message ();
+
+	void set_timestamp(uint64_t ps, double pfs);
 
   long type() const   { return d_type; }
   double arg1() const { return d_arg1; }

@@ -34,6 +34,8 @@
 
 static const pmt::pmt_t TIME_KEY = pmt::pmt_string_to_symbol("rx_time");
 static const pmt::pmt_t SYNC_TIME = pmt::pmt_string_to_symbol("sync_time");
+
+#define VERBOSE 0
     
 // Keep track of the RX timestamp
 double lts_frac_of_secs;
@@ -138,13 +140,15 @@ digital_ofdm_sampler::general_work (int noutput_items,
         sync_frac_sec -= (uint64_t)sync_frac_sec;
       }
 
-      std::cout << "got a preamble.... calculating timestamp of sync\n";
-			std::cout << "... relative_rate: " << relative_rate() << "\n";
-			std::cout << "... time_per_sample: " << time_per_sample << "\n";
-			std::cout << "... samples_passed: " << samples_passed << "\n";
-			std::cout << "... elapsed: "<< elapsed << "\n";
-			std::cout << "... sync_sec: "<< sync_sec << "\n";
-			std::cout << "... sync_fs: "<< sync_frac_sec << "\n";
+			if(VERBOSE) {
+				std::cout << "got a preamble.... calculating timestamp of sync\n";
+				std::cout << "... relative_rate: " << relative_rate() << "\n";
+				std::cout << "... time_per_sample: " << time_per_sample << "\n";
+				std::cout << "... samples_passed: " << samples_passed << "\n";
+				std::cout << "... elapsed: "<< elapsed << "\n";
+				std::cout << "... sync_sec: "<< sync_sec << "\n";
+				std::cout << "... sync_fs: "<< sync_frac_sec << "\n";
+			}
 
       // Pack up our time of synchronization, pass it along using the stream tags
       gr_tag_t tag;   // create a new tag
