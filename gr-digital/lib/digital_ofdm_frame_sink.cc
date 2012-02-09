@@ -300,8 +300,8 @@ digital_ofdm_frame_sink::work (int noutput_items,
   
   if(1) {
     std::vector<gr_tag_t> rx_sync_tags;
-    const uint64_t nread = this->nitems_read(0);
-    this->get_tags_in_range(rx_sync_tags, 0, nread, nread+noutput_items, SYNC_TIME);
+    const uint64_t nread = this->nitems_read(1);
+    this->get_tags_in_range(rx_sync_tags, 1, nread, nread+noutput_items, SYNC_TIME);
     if(rx_sync_tags.size()>0)
       std::cout << "--- got sync tag in frame_acq\n";
   }

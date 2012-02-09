@@ -159,7 +159,7 @@ digital_ofdm_sampler::general_work (int noutput_items,
           pmt::pmt_from_uint64((int)elapsed),      // FPGA clock in seconds that we found the sync
           pmt::pmt_from_double(elapsed / (int)elapsed)  // FPGA clock in fractional seconds that we found the sync
         );
-      add_item_tag(0, tag);
+      add_item_tag(1, tag);
       std::cout << "--- added sync tag in ofdm_sampler\n";
     }
     else
