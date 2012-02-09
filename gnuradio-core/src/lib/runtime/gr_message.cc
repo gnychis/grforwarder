@@ -52,7 +52,7 @@ void gr_message::set_timestamp(uint64_t ps, double pfs) {
 gr_message::gr_message (long type, double arg1, double arg2, size_t length)
   : d_type(type), d_arg1(arg1), d_arg2(arg2)
 {
-	timestamp_valid=false;
+	d_timestamp_valid=false;
   if (length == 0)
     d_buf_start = d_msg_start = d_msg_end = d_buf_end = 0;
   else {

@@ -29,6 +29,9 @@
 #include <gr_expj.h>
 #include <gr_math.h>
 #include <cstdio>
+#include <iostream>
+
+static const pmt::pmt_t SYNC_TIME = pmt::pmt_string_to_symbol("sync_time");
 
 #define VERBOSE 0
 #define M_TWOPI (2*M_PI)
@@ -184,6 +187,14 @@ digital_ofdm_frame_acquisition::general_work(int noutput_items,
   
   int unoccupied_carriers = d_fft_length - d_occupied_carriers;
   int zeros_on_left = (int)ceil(unoccupied_carriers/2.0);
+
+  if(1) {
+    std::vector<gr_tag_t> rx_sync_tags;
+    const uint64_t nread = this->nitems_read(0);
+    this->get_tags_in_range(rx_sync_tags, 0, nread, nread+ninput_items[0], SYNC_TIME);
+    if(rx_sync_tags.size()>0)
+      std::cout << "--- got sync tag in frame_acq\n";
+  }
 
   if(signal_in[0]) {
     d_phase_count = 1;

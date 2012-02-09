@@ -50,6 +50,9 @@ public:
   long type() const   { return d_type; }
   double arg1() const { return d_arg1; }
   double arg2() const { return d_arg2; }
+  long timestamp_valid() const { return (long)d_timestamp_valid; }
+  long preamble_sec() const { return (long)d_preamble_sec; }
+  double preamble_frac_sec() const { return d_preamble_frac_sec; }
 
   void set_type(long type)   { d_type = type; }
   void set_arg1(double arg1) { d_arg1 = arg1; }
