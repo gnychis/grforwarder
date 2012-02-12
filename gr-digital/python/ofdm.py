@@ -310,7 +310,7 @@ class _queue_watcher_thread(_threading.Thread):
             msg = self.rcvd_pktq.delete_head()
             ok, payload = ofdm_packet_utils.unmake_packet(msg.to_string())
             if self.callback:
-                self.callback(ok, payload, msg.timestamp_valid())
+                self.callback(ok, payload, msg.timestamp_valid(), msg.preamble_sec(), msg.preamble_frac_sec())
 
 # Generating known symbols with:
 # i = [2*random.randint(0,1)-1 for i in range(4512)]
