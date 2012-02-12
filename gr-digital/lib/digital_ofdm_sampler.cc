@@ -153,14 +153,16 @@ digital_ofdm_sampler::general_work (int noutput_items,
       // Pack up our time of synchronization, pass it along using the stream tags
       gr_tag_t tag;   // create a new tag
       tag.srcid = pmt::pmt_string_to_symbol(this->name());    // to know the source block that created tag
-      tag.offset=this->nitems_written(1) + index;     // the offset in the sample stream that we found this tag
+      tag.offset=this->nitems_written(1)+17;     // the offset in the sample stream that we found this tag
+                                                 // 17 is a magic number which was the offset i found them at (decode length?)
       tag.key=SYNC_TIME;    // the "key" of the tag, which I've defined to be "SYNC_TIME"
       tag.value = pmt::pmt_make_tuple(
           pmt::pmt_from_uint64((int)elapsed),      // FPGA clock in seconds that we found the sync
           pmt::pmt_from_double(elapsed / (int)elapsed)  // FPGA clock in fractional seconds that we found the sync
         );
       add_item_tag(1, tag);
-      std::cout << "--- added sync tag in ofdm_sampler stream at " << this->nitems_written(1)+index << "\n";
+      if(0) 
+        std::cout << "--- added sync tag in ofdm_sampler stream at " << this->nitems_written(1) << "\n";
     }
     else
       index++;

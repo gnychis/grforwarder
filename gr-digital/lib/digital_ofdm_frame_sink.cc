@@ -298,7 +298,7 @@ digital_ofdm_frame_sink::work (int noutput_items,
   unsigned int j = 0;
   unsigned int bytes=0;
   
-  if(1) {
+  if(0) {
     std::vector<gr_tag_t> rx_sync_tags;
     const uint64_t nread = this->nitems_read(1);
     this->get_tags_in_range(rx_sync_tags, 1, nread, nread+noutput_items, SYNC_TIME);
@@ -422,7 +422,7 @@ digital_ofdm_frame_sink::work (int noutput_items,
     double sync_frac_of_secs = pmt::pmt_to_double(pmt_tuple_ref(value,1));
     msg->set_timestamp(sync_secs, sync_frac_of_secs);
   } else {
-    std::cerr << "---- Header received, with no sync timestamp? (" << nread << ")\n";
+    //std::cerr << "---- Header received, with no sync timestamp? (" << nread << ")\n";
   }
 	d_target_queue->insert_tail(msg);		// send it
 	msg.reset();  				// free it up
