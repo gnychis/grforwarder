@@ -153,7 +153,7 @@ digital_ofdm_sampler::general_work (int noutput_items,
       // Pack up our time of synchronization, pass it along using the stream tags
       gr_tag_t tag;   // create a new tag
       tag.srcid = pmt::pmt_string_to_symbol(this->name());    // to know the source block that created tag
-      tag.offset=index;     // the offset in the sample stream that we found this tag
+      tag.offset=this->nitems_written(1) + index;     // the offset in the sample stream that we found this tag
       tag.key=SYNC_TIME;    // the "key" of the tag, which I've defined to be "SYNC_TIME"
       tag.value = pmt::pmt_make_tuple(
           pmt::pmt_from_uint64((int)elapsed),      // FPGA clock in seconds that we found the sync
